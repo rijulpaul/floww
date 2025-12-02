@@ -1,13 +1,33 @@
 import './Tasks.css'
-import { useReducer, useState } from 'react';
+import { useReducer, useState, useRef } from 'react';
 
-function Task ({title,index,taskEditor, setActive}:{title: string; index: number; taskEditor: any, setActive: any}) {
+function Task ({title,index,taskEditor, setActive, isActive, viewBoard}:{title: string; index: number; taskEditor: any, setActive: any, isActive: boolean, viewBoard: any}) {
     const [hover,setHover] = useState(false);
+    const inputRef = useRef(null);
     // add warning for empty input
     return (
-    <li className={'task ' + (hover && "task-hover")} key={index} onClick={()=>setActive(index)} onMouseOver={()=>setHover(true)} onMouseLeave={()=>setHover(false)}>
-         <input className="task-input" value={title} placeholder={title} onChange={(e) => taskEditor({type: "edit", value: e.target.value, index})}/>
-        { hover && <button className='task-button' onClick={()=>taskEditor({type: "delete", index})}><img className="task-delete" src='./trash.svg'/></button> }
+    <li className={'task' +" "+ (hover && "task-hover") +" "+ (isActive && "task-active" )}
+        key={index}
+        onClick={()=>setActive(index)}
+        onMouseOver={()=>setHover(true)}
+        onMouseLeave={()=>setHover(false)}
+        onKeyDown={(e)=>{ if(e.key === "Enter") {setActive(index); viewBoard(false);} else if (e.key==="Delete"){taskEditor({type: "delete", index})}}}
+        >
+        <div style={{flex: "1", position: "relative"}} onClick={()=>{setActive(index);viewBoard(false)}}>
+            <div style={{position: "absolute",height: "100%", width: "100%"}}></div>
+            <input ref={inputRef} id={"taskInput"+index} className={"task-input " + (hover && "hover")} value={title} placeholder={title} onChange={(e) => taskEditor({type: "edit", value: e.target.value, index})}/>
+        </div>
+        {
+            hover &&
+            <div style={{height: "0"}}>
+            <button className='task-button' onClick={()=>inputRef.current.focus()}>
+                <img className="task-button-svg" src='./edit.svg'/>
+            </button>
+            <button className='task-button' onClick={()=>{console.log(index,isActive); if(isActive){setActive(index-1)}; taskEditor({type: "delete", index}); }}>
+                <img className="task-button-svg" src='./trash.svg'/>
+            </button>
+            </div>
+        }
     </li>
     )
 }
@@ -19,7 +39,7 @@ function taskReducer(state: string[], action: taskEditAction): string[] {
         case "insert":
             return [...state, action.value]
         case "delete":
-            return state.filter((_,i) =>i !== action.index)
+            return state.filter((_,i) => i !== action.index)
         case "edit":
             return state.map((task, index) => index === action.index ? action.value : task)
         default:
@@ -32,19 +52,53 @@ function Tasks() {
     const [activeTask,setActiveTask] = useState(0)
     const [taskList,editTaskList] = useReducer(taskReducer,[])
 
+    function deleteTask(index:number) {
+        if (index == activeTask) {
+            setActiveTask(0);
+        }
+        editTaskList({type: "delete", index});
+    }
+
     return (
         <>
         {
-            !viewBoard ? (
+            !viewBoard ?
+             (
         <div className={'tasks-container'} onClick={()=>setViewBoard(true)}>
-            <div className='task'>{taskList[activeTask] || "Add Task"} </div>
+            {
+            taskList[activeTask] 
+            ? <div className='task'>{"\u00A0"+taskList[activeTask]+"\u00A0"}</div>
+            : <button
+                className='task-add'
+                style={{width: "15vw",margin: "0.5rem"}}
+                onClick={()=>{
+                    editTaskList({ type: "insert", value: `Task ${taskList.length}`})
+                    setActiveTask(taskList.length)
+                    setViewBoard(true)
+                    setTimeout(()=>{
+                    const el = document.getElementById("taskInput"+taskList.length)
+                    if(el) el.focus()
+                    },0)
+                }}>+</button>
+            }
         </div>
         ) : (
         <>
             <div style={{position: "absolute", left: "0", right: "0", top: "0", bottom: "0", zIndex: "2"}} onClick={()=>setViewBoard(false)}></div>
             <div className={'tasks-container visible'}>
-                <button className='task-add' onClick={()=>editTaskList({ type: "insert", value: "New Task"})}>+</button>
-                { taskList && taskList.map((_,index)=><Task title={taskList[index]} index={index} taskEditor={editTaskList} setActive={setActiveTask}/>) }
+                <button
+                    className='task-add'
+                    onClick={()=>{
+                        editTaskList({ type: "insert", value: `Task ${taskList.length}`})
+                        setActiveTask(taskList.length)
+                        setViewBoard(true)
+                        setTimeout(()=>{
+                        const el = document.getElementById("taskInput"+taskList.length)
+                        if(el) el.focus()
+                        },0)
+                    }}
+                >+</button>
+                { taskList && taskList.map((_,index)=><Task title={taskList[index]} index={index} taskEditor={editTaskList} setActive={setActiveTask} isActive={index==activeTask} viewBoard={setViewBoard}/>) }
             </div>
         </>
         )}
