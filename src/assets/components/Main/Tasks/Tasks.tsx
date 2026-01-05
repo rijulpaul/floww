@@ -3,7 +3,7 @@ import { useReducer, useState, useRef } from 'react';
 
 function Task ({title,index,taskEditor, setActive, isActive, viewBoard}:{title: string; index: number; taskEditor: any, setActive: any, isActive: boolean, viewBoard: any}) {
     const [hover,setHover] = useState(false);
-    const inputRef = useRef(null);
+    const inputRef = useRef<HTMLInputElement | null>(null);
     // add warning for empty input
     return (
     <li className={'task' +" "+ (hover && "task-hover") +" "+ (isActive && "task-active" )}
@@ -20,7 +20,7 @@ function Task ({title,index,taskEditor, setActive, isActive, viewBoard}:{title: 
         {
             hover &&
             <div style={{height: "0"}}>
-            <button className='task-button' onClick={()=>inputRef.current.focus()}>
+            <button className='task-button' onClick={()=>inputRef?.current?.focus()}>
                 <img className="task-button-svg" src='./edit.svg'/>
             </button>
             <button className='task-button' onClick={()=>{console.log(index,isActive); if(isActive){setActive(index-1)}; taskEditor({type: "delete", index}); }}>
@@ -52,12 +52,12 @@ function Tasks() {
     const [activeTask,setActiveTask] = useState(0)
     const [taskList,editTaskList] = useReducer(taskReducer,[])
 
-    function deleteTask(index:number) {
-        if (index == activeTask) {
-            setActiveTask(0);
-        }
-        editTaskList({type: "delete", index});
-    }
+    // function deleteTask(index:number) {
+    //     if (index == activeTask) {
+    //         setActiveTask(0);
+    //     }
+    //     editTaskList({type: "delete", index});
+    // }
 
     return (
         <>
